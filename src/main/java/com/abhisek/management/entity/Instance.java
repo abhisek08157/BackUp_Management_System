@@ -2,12 +2,10 @@ package com.abhisek.management.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "instances")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Instance {
@@ -35,4 +33,28 @@ public class Instance {
     private String dbPassword;
 
     private String status;
+
+    public Integer getInstanceId() { return instanceId; }
+    public void setInstanceId(Integer instanceId) { this.instanceId = instanceId; }
+
+    public String getInstanceName() { return instanceName; }
+    public void setInstanceName(String instanceName) { this.instanceName = instanceName; }
+
+    public String getDatabaseName() { return databaseName; }
+    public void setDatabaseName(String databaseName) { this.databaseName = databaseName; }
+
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+
+    public Integer getPort() { return port; }
+    public void setPort(Integer port) { this.port = port; }
+
+    public String getDbUsername() { return dbUsername; }
+    public void setDbUsername(String dbUsername) { this.dbUsername = dbUsername; }
+
+    public String getDbPassword() { return dbPassword; }
+    public void setDbPassword(String dbPassword) { this.dbPassword = dbPassword; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

@@ -7,4 +7,6 @@ import com.abhisek.management.entity.BackupHistory;
 public interface BackupHistoryRepository
         extends JpaRepository<BackupHistory, Integer> {
 
+    long countByStatus(String status);
+
 }
