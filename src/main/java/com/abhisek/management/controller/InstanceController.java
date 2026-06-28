@@ -14,6 +14,7 @@ import com.abhisek.management.service.InstanceService;
 
 @RestController
 @RequestMapping("/api/instances")
+@CrossOrigin("*")
 public class InstanceController {
 
     private final InstanceService instanceService;
