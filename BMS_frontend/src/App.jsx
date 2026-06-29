@@ -367,7 +367,7 @@ function LoginScreen({ onLogin }) {
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
+                placeholder="Enter Username"
                 autoComplete="username"
               />
             </div>
@@ -381,7 +381,7 @@ function LoginScreen({ onLogin }) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter Password"
                 autoComplete="current-password"
               />
             </div>
@@ -399,7 +399,7 @@ function LoginScreen({ onLogin }) {
             {loading ? "Signing in" : "Log in"}
           </button>
 
-          <p className="login-hint">Demo credentials — admin / admin123</p>
+          <p className="login-hint"></p>
         </form>
       </div>
     </div>
@@ -421,14 +421,28 @@ function Sidebar({ active, onNavigate, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <div className="sidebar-brand-mark">
-          <Server size={17} />
-        </div>
-        <div>
-          <p className="sidebar-brand-title">Backup Console</p>
-          <p className="sidebar-brand-sub">v1.0 · ADMIN</p>
-        </div>
-      </div>
+
+  <img
+    src="/railway-logo.png"
+    alt="East Coast Railway"
+    className="railway-logo"
+  />
+
+  <div>
+    <p className="sidebar-brand-title">
+      Backup Management
+    </p>
+
+    <p className="sidebar-brand-title">
+      System
+    </p>
+
+    <p className="sidebar-brand-sub">
+      East Coast Railway
+    </p>
+  </div>
+
+</div>
 
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => {
@@ -474,7 +488,7 @@ function StatCard({ label, value, tone, icon: Icon }) {
   );
 }
 
-function DashboardScreen({ pushToast }) {
+function DashboardScreen({ pushToast, refreshKey }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recentHistory, setRecentHistory] = useState([]);
@@ -487,7 +501,7 @@ function DashboardScreen({ pushToast }) {
         const [dash, hist] = await Promise.all([api.getDashboard(), api.getHistory()]);
         if (!mounted) return;
         setData(dash);
-        setRecentHistory(hist.slice(0, 5));
+        setRecentHistory(hist.slice(-5).reverse());
       } catch (e) {
         pushToast("error", "Could not load dashboard data.");
       } finally {
@@ -498,7 +512,7 @@ function DashboardScreen({ pushToast }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   const successRate = data && data.totalBackups > 0
     ? Math.round((data.successfulBackups / data.totalBackups) * 100)
@@ -614,7 +628,7 @@ const EMPTY_INSTANCE = {
   instanceName: "",
   databaseName: "",
   ipAddress: "",
-  port: 3306,
+  port: "",
   dbUsername: "",
   dbPassword: "",
   status: "ACTIVE",
@@ -671,7 +685,7 @@ function InstanceFormModal({ initial, onClose, onSaved, pushToast }) {
           <input
             value={form.instanceName}
             onChange={(e) => update("instanceName", e.target.value)}
-            placeholder="ICARD_DB"
+            placeholder="Enter Instance Name"
           />
           {errors.instanceName && <span className="field-error">{errors.instanceName}</span>}
         </label>
@@ -681,7 +695,7 @@ function InstanceFormModal({ initial, onClose, onSaved, pushToast }) {
           <input
             value={form.databaseName}
             onChange={(e) => update("databaseName", e.target.value)}
-            placeholder="railway_icard"
+            placeholder="Enter Database Name"
           />
           {errors.databaseName && <span className="field-error">{errors.databaseName}</span>}
         </label>
@@ -692,7 +706,7 @@ function InstanceFormModal({ initial, onClose, onSaved, pushToast }) {
             <input
               value={form.ipAddress}
               onChange={(e) => update("ipAddress", e.target.value)}
-              placeholder="localhost"
+              placeholder="Enter IP Address"
             />
             {errors.ipAddress && <span className="field-error">{errors.ipAddress}</span>}
           </label>
@@ -702,7 +716,7 @@ function InstanceFormModal({ initial, onClose, onSaved, pushToast }) {
               type="number"
               value={form.port}
               onChange={(e) => update("port", e.target.value)}
-              placeholder="3306"
+              placeholder="Enter Port"
             />
             {errors.port && <span className="field-error">{errors.port}</span>}
           </label>
@@ -714,7 +728,7 @@ function InstanceFormModal({ initial, onClose, onSaved, pushToast }) {
             <input
               value={form.dbUsername}
               onChange={(e) => update("dbUsername", e.target.value)}
-              placeholder="root"
+              placeholder="Enter DB Username"
             />
             {errors.dbUsername && <span className="field-error">{errors.dbUsername}</span>}
           </label>
@@ -724,7 +738,7 @@ function InstanceFormModal({ initial, onClose, onSaved, pushToast }) {
               type="password"
               value={form.dbPassword}
               onChange={(e) => update("dbPassword", e.target.value)}
-              placeholder="••••••"
+              placeholder="Enter DB Password"
             />
           </label>
         </div>
@@ -950,7 +964,7 @@ function TableSkeleton({ cols = 5, rows = 4 }) {
 /* =========================================================================
    MANUAL BACKUP MODULE
    ========================================================================= */
-function ManualBackupScreen({ pushToast }) {
+function ManualBackupScreen({ pushToast, onBackupComplete })  {
   const [instances, setInstances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [runningId, setRunningId] = useState(null);
@@ -973,21 +987,32 @@ function ManualBackupScreen({ pushToast }) {
 
   async function handleRun(instance) {
     setRunningId(instance.instanceId);
-    try {
-      const result = await api.runBackup(instance.instanceId);
-      setLastResult((m) => ({ ...m, [instance.instanceId]: result }));
-      if (result === "SUCCESS") {
-        pushToast("success", `Backup successful — ${instance.instanceName}`);
-      } else {
-        pushToast("error", `Backup failed — ${instance.instanceName}`);
-      }
-    } catch (e) {
-      pushToast("error", `Backup failed — ${instance.instanceName}`);
-    } finally {
-      setRunningId(null);
-    }
-  }
 
+    try {
+        const result = await api.runBackup(instance.instanceId);
+
+        setLastResult((m) => ({
+            ...m,
+            [instance.instanceId]: result
+        }));
+
+        // Refresh Dashboard immediately
+        if (onBackupComplete) {
+            onBackupComplete();
+        }
+
+        if (result === "SUCCESS") {
+            pushToast("success", `Backup successful — ${instance.instanceName}`);
+        } else {
+            pushToast("error", `Backup failed — ${instance.instanceName}`);
+        }
+
+    } catch (e) {
+        pushToast("error", `Backup failed — ${instance.instanceName}`);
+    } finally {
+        setRunningId(null);
+    }
+}
   return (
     <div className="screen">
       <ScreenHeader title="Manual Backup" subtitle="Trigger an on-demand backup for any instance" />
@@ -1238,17 +1263,36 @@ function ScheduleFormModal({ instances, onClose, onSaved, pushToast }) {
         </label>
 
         <div className="field-row">
-          <label className="field">
-            <span className="field-label">Backup date</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            {errors.date && <span className="field-error">{errors.date}</span>}
-          </label>
-          <label className="field">
-            <span className="field-label">Backup time</span>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            {errors.time && <span className="field-error">{errors.time}</span>}
-          </label>
-        </div>
+  <label className="field">
+    <span className="field-label">Backup Date</span>
+    <input
+      type="date"
+      value={date}
+      min={new Date().toISOString().split("T")[0]}
+      onChange={(e) => setDate(e.target.value)}
+    />
+    {errors.date && (
+      <span className="field-error">{errors.date}</span>
+    )}
+  </label>
+
+  <label className="field">
+    <span className="field-label">Backup Time</span>
+    <input
+      type="time"
+      value={time}
+      min={
+        date === new Date().toISOString().split("T")[0]
+          ? new Date().toTimeString().slice(0, 5)
+          : undefined
+      }
+      onChange={(e) => setTime(e.target.value)}
+    />
+    {errors.time && (
+      <span className="field-error">{errors.time}</span>
+    )}
+  </label>
+</div>
 
         <label className="field">
           <span className="field-label">Backup location</span>
@@ -1413,8 +1457,21 @@ function SchedulesScreen({ pushToast }) {
    ========================================================================= */
 export default function App() {
   const [authed, setAuthed] = useState(false);
-  const [active, setActive] = useState("dashboard");
-  const [toasts, setToasts] = useState([]);
+
+const [active, setActive] = useState("dashboard");
+
+const [toasts, setToasts] = useState([]);
+
+useEffect(() => {
+    if (sessionStorage.getItem("loggedIn") === "true") {
+        setAuthed(true);
+
+        const page = sessionStorage.getItem("activePage");
+        if (page) {
+            setActive(page);
+        }
+    }
+}, []);
 
   const pushToast = useCallback((type, message) => {
     const id = Math.random().toString(36).slice(2);
@@ -1433,11 +1490,15 @@ export default function App() {
       <>
         <GlobalStyles />
         <LoginScreen
-          onLogin={() => {
-            setAuthed(true);
-            setActive("dashboard");
-          }}
-        />
+    onLogin={() => {
+
+        sessionStorage.setItem("loggedIn", "true");
+        sessionStorage.setItem("activePage", "dashboard");
+
+        setAuthed(true);
+        setActive("dashboard");
+    }}
+/>
       </>
     );
   }
@@ -1446,7 +1507,18 @@ export default function App() {
     <>
       <GlobalStyles />
       <div className="shell">
-        <Sidebar active={active} onNavigate={setActive} onLogout={() => setAuthed(false)} />
+        <Sidebar
+    active={active}
+    onNavigate={(page) => {
+        setActive(page);
+        sessionStorage.setItem("activePage", page);
+    }}
+    onLogout={() => {
+        sessionStorage.clear();
+        setAuthed(false);
+        setActive("dashboard");
+    }}
+/>
         <main className="main">
           {active === "dashboard" && <DashboardScreen pushToast={pushToast} />}
           {active === "instances" && <InstancesScreen pushToast={pushToast} />}
@@ -1467,20 +1539,21 @@ function GlobalStyles() {
   return (
     <style>{`
       :root {
-        --bg: #0B0E14;
-        --panel: #12161F;
-        --panel-raised: #161B26;
-        --border: #232938;
-        --border-soft: #1B212E;
-        --text: #E6E9EF;
-        --text-dim: #8B94A7;
-        --text-faint: #5C6478;
-        --ok: #3DD68C;
-        --err: #FF5C5C;
-        --warn: #F5A623;
-        --info: #4FA3FF;
-        --muted: #5C6478;
-        --accent: #4FA3FF;
+        --bg: #111827;
+    --panel: #1F2937;
+    --panel-raised: #273449;
+    --border: #374151;
+    --border-soft: #2B3648;
+
+    --text: #F3F4F6;
+    --text-dim: #9CA3AF;
+    --text-faint: #6B7280;
+
+    --accent: #3B82F6;
+    --info: #60A5FA;
+    --ok: #22C55E;
+    --warn: #F59E0B;
+    --err: #EF4444;
         --radius: 8px;
         --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
         --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1489,11 +1562,20 @@ function GlobalStyles() {
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
       * { box-sizing: border-box; }
-
-      .shell, .login-screen {
+      
+       .shell,.login-screen {
         font-family: var(--sans);
         color: var(--text);
-        background: var(--bg);
+       background:
+    radial-gradient(circle at top right,
+    rgba(59,130,246,.12),
+    transparent 35%),
+
+    radial-gradient(circle at bottom left,
+    rgba(34,197,94,.08),
+    transparent 40%),
+
+    #111827;
         background-image:
           radial-gradient(circle at 0% 0%, rgba(79,163,255,0.05), transparent 40%),
           radial-gradient(circle at 100% 100%, rgba(61,214,140,0.04), transparent 40%);
@@ -1595,22 +1677,57 @@ function GlobalStyles() {
         padding: 8px 10px;
       }
 
-      .btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-        font-size: 13px; font-weight: 600;
-        border-radius: 7px;
-        padding: 9px 16px;
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: filter 0.12s, transform 0.06s, background 0.12s;
-        white-space: nowrap;
-      }
+      .btn{
+
+    border-radius:12px;
+
+    transition:.30s;
+
+    font-weight:600;
+
+}
+
+.btn:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 12px 25px rgba(37,99,235,.30);
+
+}
       .btn:active { transform: translateY(1px); }
       .btn:disabled { opacity: 0.55; cursor: not-allowed; }
       .btn-block { width: 100%; }
       .btn-sm { padding: 6px 11px; font-size: 12.5px; }
-      .btn-primary { background: var(--info); color: #051426; }
-      .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+      .btn-primary{
+
+    background:linear-gradient(
+        135deg,
+        #3b82f6,
+        #2563eb
+    );
+
+    color:white;
+
+    border:none;
+
+    border-radius:12px;
+
+    padding:12px 22px;
+
+    font-weight:600;
+
+    font-size:14px;
+
+    transition:.3s;
+
+}
+      .btn-primary:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:0 14px 25px rgba(37,99,235,.45);
+
+}
       .btn-secondary { background: var(--panel-raised); border-color: var(--border); color: var(--text); }
       .btn-secondary:hover:not(:disabled) { background: #1C2230; }
       .btn-ghost { background: transparent; color: var(--text-dim); border-color: var(--border); }
@@ -1624,22 +1741,70 @@ function GlobalStyles() {
       @keyframes spin { to { transform: rotate(360deg); } }
 
       /* ---------- SHELL ---------- */
-      .shell {
-        display: grid;
-        grid-template-columns: 232px 1fr;
-        min-height: 100vh;
-      }
-      .sidebar {
-        background: var(--panel);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        padding: 18px 14px;
-        position: sticky;
-        top: 0;
-        height: 100vh;
-      }
-      .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 22px; }
+      .shell{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    min-height:100vh;
+
+    background:
+        radial-gradient(circle at top left,
+        rgba(37,99,235,.12),
+        transparent 35%),
+
+        radial-gradient(circle at bottom right,
+        rgba(14,165,233,.08),
+        transparent 45%),
+
+        linear-gradient(
+        180deg,
+        #081321,
+        #0d1728,
+        #111c2f);
+}
+      .sidebar{
+
+    width:300px;
+
+    background:
+
+    linear-gradient(
+    180deg,
+    #0b1d36 0%,
+    #0f2748 50%,
+    #13345d 100%);
+
+    border-right:1px solid rgba(255,255,255,.08);
+
+    padding:30px 26px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    box-shadow:
+
+    10px 0 40px rgba(0,0,0,.45);
+
+    position:relative;
+
+}
+      .sidebar-brand{
+
+display:flex;
+
+flex-direction:column;
+
+align-items:center;
+
+justify-content:center;
+
+text-align:center;
+
+margin-bottom:38px;
+
+gap:10px;
+
+}
       .sidebar-brand-mark {
         width: 30px; height: 30px; border-radius: 7px;
         background: rgba(79,163,255,0.1);
@@ -1648,70 +1813,284 @@ function GlobalStyles() {
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
       }
-      .sidebar-brand-title { font-size: 13px; font-weight: 600; margin: 0; }
-      .sidebar-brand-sub { font-size: 10.5px; color: var(--text-faint); margin: 1px 0 0; font-family: var(--mono); }
+      .sidebar-brand-title{
 
-      .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-      .sidebar-link {
-        display: flex; align-items: center; gap: 10px;
-        padding: 9px 10px;
-        border-radius: 7px;
-        background: transparent;
-        border: none;
-        color: var(--text-dim);
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        text-align: left;
-        transition: background 0.12s, color 0.12s;
-      }
+font-size:20px;
+
+font-weight:700;
+
+line-height:1.3;
+
+color:white;
+
+text-align:center;
+
+}
+      .sidebar-brand-sub{
+
+font-size:15px;
+
+color:#59a7ff;
+
+margin-top:4px;
+
+font-weight:500;
+
+}
+
+      .sidebar-nav{
+
+display:flex;
+
+flex-direction:column;
+
+gap:16px;
+
+margin-top:20px;
+
+flex:1;
+
+}
+      .sidebar-link{
+
+display:flex;
+
+align-items:center;
+
+gap:14px;
+
+padding:16px 18px;
+
+border-radius:16px;
+
+background:#102544;
+
+border:1px solid rgba(255,255,255,.08);
+
+font-size:16px;
+
+font-weight:500;
+
+color:#d6e4ff;
+
+transition:.35s;
+
+cursor:pointer;
+
+}
       .sidebar-link span:first-of-type { flex: 1; }
-      .sidebar-link:hover { background: var(--panel-raised); color: var(--text); }
-      .sidebar-link--active {
-        background: rgba(79,163,255,0.1);
-        color: var(--info);
-      }
+      .sidebar-link:hover{
+
+background:#1b4f91;
+
+transform:translateX(6px);
+
+box-shadow:
+
+0 8px 20px rgba(37,99,235,.30);
+
+}
+      .sidebar-link--active{
+
+background:
+
+linear-gradient(
+90deg,
+#3578ff,
+#2f5ff8);
+
+color:white;
+
+box-shadow:
+
+0 12px 30px rgba(37,99,235,.45);
+
+}
       .sidebar-link-chevron { color: var(--info); opacity: 0.7; }
-      .sidebar-logout { margin-top: auto; color: var(--text-faint); }
+      .sidebar-logout{
+
+margin-top:auto;
+
+padding:16px;
+
+border-radius:16px;
+
+background:#112849;
+
+border:1px solid rgba(255,255,255,.08);
+
+}
       .sidebar-logout:hover { color: var(--err); background: rgba(255,92,92,0.07); }
 
-      .main { padding: 32px 36px 60px; overflow-x: hidden; }
-      .screen { display: flex; flex-direction: column; gap: 22px; max-width: 1080px; }
+      .main{
+    width:100%;
+    padding:24px 34px;
+    background:transparent;
+}
+.screen{
+    width:100%;
+    max-width:1500px;
+    margin:auto;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
 
-      .screen-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      .screen-header h2 { font-size: 19px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-      .screen-header p { font-size: 13px; color: var(--text-dim); margin: 4px 0 0; }
+      .screen-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:4px;
+    padding-bottom:6px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+}
+      .screen-header h2{
+
+font-size:42px;
+
+font-weight:700;
+
+color:white;
+
+margin-bottom:8px;
+
+letter-spacing:-1px;
+
+}
+      .screen-header p{
+
+font-size:18px;
+
+color:#97a8c8;
+
+}
 
       /* ---------- STAT CARDS ---------- */
-      .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-      .stat-card {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 16px 16px 14px;
-      }
-      .stat-card-top { display: flex; align-items: center; justify-content: space-between; color: var(--text-dim); margin-bottom: 10px; }
-      .stat-card-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-      .stat-card-value { font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1; }
-      .stat-card-bar { height: 3px; background: var(--border-soft); border-radius: 2px; margin-top: 12px; overflow: hidden; }
-      .stat-card-bar-fill { height: 100%; width: 60%; background: var(--info); }
-      .stat-card[data-tone="ok"] .stat-card-bar-fill { background: var(--ok); width: 92%; }
-      .stat-card[data-tone="err"] .stat-card-bar-fill { background: var(--err); width: 25%; }
-      .stat-card[data-tone="info"] .stat-card-bar-fill { background: var(--info); width: 70%; }
-      .stat-card[data-tone="neutral"] .stat-card-bar-fill { background: var(--text-faint); width: 100%; }
-      .stat-card[data-tone="ok"] .stat-card-top, .stat-card[data-tone="ok"] svg { color: var(--ok); }
-      .stat-card[data-tone="err"] .stat-card-top, .stat-card[data-tone="err"] svg { color: var(--err); }
-      .stat-card[data-tone="info"] .stat-card-top, .stat-card[data-tone="info"] svg { color: var(--info); }
 
-      .stat-card.skeleton { display: flex; flex-direction: column; gap: 14px; }
+.stat-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+    margin:30px 0 38px;
+}
 
+.stat-card{
+    position:relative;
+    background:linear-gradient(145deg,#1c2940,#172236);
+    border:1px solid rgba(72,135,255,.18);
+    border-radius:22px;
+    padding:22px;
+    overflow:hidden;
+    transition:.35s ease;
+    box-shadow:0 18px 45px rgba(0,0,0,.25);
+}
+
+.stat-card::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:4px;
+    background:linear-gradient(90deg,#3b82f6,#2dd4bf);
+}
+
+.stat-card:hover{
+    transform:translateY(-6px);
+    border-color:#4b93ff;
+    box-shadow:0 20px 45px rgba(0,0,0,.45);
+}
+
+.stat-card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.stat-card-label{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:#8db8ff;
+}
+
+.stat-card-top svg{
+    font-size:22px;
+    color:#53a4ff;
+}
+
+.stat-card-value{
+    font-size:56px;
+    font-weight:700;
+    color:#ffffff;
+    line-height:1;
+    margin:8px 0 20px;
+    text-align:center;
+}
+
+.stat-card-bar{
+    width:100%;
+    height:6px;
+    background:rgba(255,255,255,.08);
+    border-radius:50px;
+    overflow:hidden;
+}
+
+.stat-card-bar-fill{
+    height:100%;
+    border-radius:50px;
+    transition:.5s;
+}
+
+.stat-card[data-tone="info"] .stat-card-bar-fill{
+    width:65%;
+    background:#4aa3ff;
+}
+
+.stat-card[data-tone="neutral"] .stat-card-bar-fill{
+    width:100%;
+    background:#95a3b8;
+}
+
+.stat-card[data-tone="ok"] .stat-card-bar-fill{
+    width:84%;
+    background:#2dd36f;
+}
+
+.stat-card[data-tone="err"] .stat-card-bar-fill{
+    width:28%;
+    background:#ff5f63;
+}
+
+.stat-card[data-tone="ok"] .stat-card-top{
+    color:#2dd36f;
+}
+
+.stat-card[data-tone="err"] .stat-card-top{
+    color:#ff5f63;
+}
+
+.stat-card[data-tone="info"] .stat-card-top{
+    color:#4aa3ff;
+}
       /* ---------- PANELS ---------- */
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 18px 18px 16px;
-      }
+      .panel{
+
+    background:#1E293B;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+
+    backdrop-filter:blur(8px);
+
+    border-radius:18px;
+
+    border:1px solid rgba(255,255,255,.05);
+
+}
       .panel--flush { padding: 0; overflow: hidden; }
       .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
       .panel-head h3 { font-size: 13.5px; font-weight: 600; margin: 0; }
@@ -1753,8 +2132,17 @@ function GlobalStyles() {
         color: var(--text);
         vertical-align: middle;
       }
-      .data-table tbody tr:last-child td { border-bottom: none; }
-      .data-table tbody tr:hover { background: rgba(255,255,255,0.015); }
+      .data-table tbody tr{
+
+    transition:.25s;
+
+}
+
+.data-table tbody tr:hover{
+
+    background:#18283d;
+
+}
       .cell-strong { font-weight: 600; }
       .muted-cell { color: var(--text-faint); }
       .mono { font-family: var(--mono); font-size: 12.5px; }
@@ -1854,6 +2242,70 @@ function GlobalStyles() {
 
       .form-grid { display: flex; flex-direction: column; gap: 14px; }
       .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin: 18px 0 0; }
+      .railway-logo{
+
+width:78px;
+
+height:78px;
+
+border-radius:50%;
+
+background:white;
+
+padding:8px;
+
+object-fit:contain;
+
+box-shadow:
+
+0 0 35px rgba(59,130,246,.45);
+
+margin-bottom:10px;
+
+transition:.35s;
+
+}
+
+.railway-logo:hover{
+
+transform:scale(1.08);
+
+}
+    .activity-item{
+
+    border-left:4px solid #22c55e;
+
+    padding-left:18px;
+
+    transition:.30s;
+
+}
+
+.activity-item:hover{
+
+    background:#17253b;
+
+    border-radius:12px;
+
+}
+    .page-title{
+
+    font-size:34px;
+
+    font-weight:700;
+
+    color:#fff;
+
+    letter-spacing:.5px;
+
+}
+    
+   
+    
+   
+   
+
+
     `}</style>
   );
 }
