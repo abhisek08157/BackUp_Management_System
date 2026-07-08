@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+# Google Credentials
+src/main/resources/service-account.json
+src/main/resources/oauth.json
+tokens/StoredCredential

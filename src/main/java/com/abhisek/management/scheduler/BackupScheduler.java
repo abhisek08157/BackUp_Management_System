@@ -43,10 +43,15 @@ public class BackupScheduler {
                 	    backupTime.getHour() == now.getHour() &&
                 	    backupTime.getMinute() == now.getMinute()) {
 
-                	    backupService.runBackup(
-                	            schedule.getInstance()
-                	                    .getInstanceId());
+                	backupService.runBackup(
 
+                	        schedule.getInstance().getInstanceId(),
+
+                	        schedule.getBackupLocation(),
+
+                	        "SCHEDULED"
+
+                	);
                 	    schedule.setStatus("COMPLETED");
                 	    scheduleRepository.save(schedule);
 

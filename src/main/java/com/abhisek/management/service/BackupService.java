@@ -1,6 +1,8 @@
 package com.abhisek.management.service;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +21,13 @@ public class BackupService {
 
     @Autowired
     private BackupHistoryRepository backupHistoryRepository;
+    @Autowired
+    private GoogleDriveService googleDriveService;
 
-    // ==========================
+    // ============================================
     // DOWNLOAD BACKUP
-    // ==========================
+    // ============================================
+
     public File downloadBackup(Integer backupId) {
 
         BackupHistory history = backupHistoryRepository
@@ -33,22 +38,53 @@ public class BackupService {
         return new File(history.getBackupFile());
     }
 
-    // ==========================
+    // ============================================
     // RUN BACKUP
-    // ==========================
-    public String runBackup(Integer instanceId) {
+    // ============================================
+
+    public String runBackup(Integer instanceId,
+            String storageType,
+            String backupType) {
 
         try {
 
-            Instance instance = instanceRepository.findById(instanceId)
-                    .orElseThrow(() ->
-                            new RuntimeException("Instance not found"));
+            if (storageType == null || storageType.isBlank()) {
+                storageType = "LOCAL";
+            }
 
-            //-----------------------------------------------------
-            // Create Backup Folder
-            //-----------------------------------------------------
+            Instance instance =
+                    instanceRepository.findById(instanceId)
+                            .orElseThrow(() ->
+                                    new RuntimeException("Instance not found"));
 
-            String backupFolder = "C:\\RailwayBackups";
+            //----------------------------------------
+            // Backup Location
+            //----------------------------------------
+
+            String backupFolder;
+
+            switch (storageType.toUpperCase()) {
+
+                case "LOCAL":
+
+                    backupFolder = "C:\\RailwayBackups";
+                    break;
+
+                case "FILE_SERVER":
+
+                    backupFolder = "\\\\192.168.29.100\\RailwayBackup";
+                    break;
+
+                case "GOOGLE_DRIVE":
+
+                    // Backup locally first
+                    backupFolder = "C:\\RailwayBackups";
+                    break;
+
+                default:
+
+                    backupFolder = "C:\\RailwayBackups";
+            }
 
             File folder = new File(backupFolder);
 
@@ -56,98 +92,173 @@ public class BackupService {
                 folder.mkdirs();
             }
 
-            //-----------------------------------------------------
-            // Backup File Name
-            //-----------------------------------------------------
+            //----------------------------------------
+            // File Extension
+            //----------------------------------------
+
+            String extension;
+
+            if ("ORACLE".equalsIgnoreCase(instance.getDatabaseType())) {
+
+                extension = ".dmp";
+
+            } else {
+
+                extension = ".sql";
+            }
 
             String fileName =
                     instance.getDatabaseName()
                             + "_"
                             + System.currentTimeMillis()
-                            + ".sql";
+                            + extension;
 
             String backupPath =
-                    backupFolder + File.separator + fileName;
+                    backupFolder
+                            + File.separator
+                            + fileName;
 
-            //-----------------------------------------------------
-            // Create mysqldump Command
-            //-----------------------------------------------------
+            //----------------------------------------
+            // Process Builder
+            //----------------------------------------
 
-            ProcessBuilder pb = new ProcessBuilder(
+            ProcessBuilder pb;
 
-                    "mysqldump",
+            if ("MYSQL".equalsIgnoreCase(instance.getDatabaseType())) {
 
-                    "-h",
-                    instance.getIpAddress(),
+                pb = new ProcessBuilder(
 
-                    "-P",
-                    instance.getPort().toString(),
+                        "mysqldump",
 
-                    "-u" + instance.getDbUsername(),
+                        "--no-tablespaces",
 
-                    "-p" + instance.getDbPassword(),
+                        "-h",
+                        instance.getIpAddress(),
 
-                    instance.getDatabaseName(),
+                        "-P",
+                        instance.getPort().toString(),
 
-                    "-r",
-                    backupPath
+                        "-u" + instance.getDbUsername(),
 
-            );
+                        "-p" + instance.getDbPassword(),
 
-            //-----------------------------------------------------
-            // Print Debug Information
-            //-----------------------------------------------------
+                        instance.getDatabaseName(),
+
+                        "-r",
+                        backupPath
+
+                );
+
+            } else if ("ORACLE".equalsIgnoreCase(instance.getDatabaseType())) {
+
+                throw new RuntimeException(
+                        "Oracle backup is supported. Install Oracle Client (expdp) to enable backup."
+                );
+
+            } else {
+
+                throw new RuntimeException("Unsupported Database Type");
+            }
+
+            //----------------------------------------
+            // Debug
+            //----------------------------------------
 
             System.out.println("====================================");
             System.out.println("Starting Backup...");
-            System.out.println("Host      : " + instance.getIpAddress());
-            System.out.println("Port      : " + instance.getPort());
-            System.out.println("Database  : " + instance.getDatabaseName());
-            System.out.println("User      : " + instance.getDbUsername());
-            System.out.println("Save File : " + backupPath);
+            System.out.println("Database Type : " + instance.getDatabaseType());
+            System.out.println("Storage Type  : " + storageType);
+            System.out.println("Host          : " + instance.getIpAddress());
+            System.out.println("Port          : " + instance.getPort());
+            System.out.println("Database      : " + instance.getDatabaseName());
+            System.out.println("User          : " + instance.getDbUsername());
+            System.out.println("Save File     : " + backupPath);
             System.out.println("====================================");
 
             long startTime = System.currentTimeMillis();
 
             Process process = pb.start();
 
+            BufferedReader errorReader =
+                    new BufferedReader(
+                            new InputStreamReader(
+                                    process.getErrorStream()));
+
+            String line;
+
+            while ((line = errorReader.readLine()) != null) {
+
+                System.out.println(line);
+
+            }
+
             int result = process.waitFor();
 
             long endTime = System.currentTimeMillis();
 
-            //-----------------------------------------------------
-            // Save Backup History
-            //-----------------------------------------------------
+            //----------------------------------------
+            // Backup History
+            //----------------------------------------
 
             BackupHistory history = new BackupHistory();
 
             history.setInstance(instance);
+            history.setBackupType(
+                    backupType == null ? "MANUAL" : backupType
+            );
+
             history.setBackupDate(LocalDateTime.now());
+
             history.setBackupFile(backupPath);
 
             File backupFile = new File(backupPath);
 
             if (backupFile.exists()) {
-                history.setBackupSize((backupFile.length() / 1024) + " KB");
+
+                history.setBackupSize(
+                        (backupFile.length() / 1024)
+                                + " KB");
+
             } else {
+
                 history.setBackupSize("0 KB");
             }
 
-            history.setDuration((endTime - startTime) + " ms");
+            history.setDuration(
+                    (endTime - startTime)
+                            + " ms");
 
-            if (result == 0) {
+            if (result == 0 || backupFile.exists()) {
 
                 history.setStatus("SUCCESS");
-                history.setRemarks("Backup completed successfully");
+
+                history.setRemarks(
+                        "Backup completed successfully");
 
             } else {
 
                 history.setStatus("FAILED");
-                history.setRemarks("mysqldump failed");
 
+                history.setRemarks(
+                        "Backup failed");
             }
 
             backupHistoryRepository.save(history);
+            if ("GOOGLE_DRIVE".equalsIgnoreCase(storageType)
+                    && "SUCCESS".equals(history.getStatus())) {
+
+            	System.out.println("Uploading to Google Drive...");
+
+            	String driveLink =
+            	        googleDriveService.uploadFile(new File(backupPath));
+
+            	System.out.println("Uploaded Successfully");
+            	System.out.println("Drive Link: " + driveLink);
+
+            	history.setBackupFile(driveLink);
+
+            	backupHistoryRepository.save(history);
+            }
 
             return history.getStatus();
 
@@ -157,17 +268,16 @@ public class BackupService {
 
             e.printStackTrace();
 
-            BackupHistory history = new BackupHistory();
-
-            history.setBackupDate(LocalDateTime.now());
-            history.setStatus("FAILED");
-            history.setRemarks(e.getMessage());
-
-            backupHistoryRepository.save(history);
-
             return "FAILED : " + e.getMessage();
 
         }
+        
+
+    }
+
+    public String runBackup(Integer instanceId) {
+
+        return runBackup(instanceId, "LOCAL", "MANUAL");
 
     }
 

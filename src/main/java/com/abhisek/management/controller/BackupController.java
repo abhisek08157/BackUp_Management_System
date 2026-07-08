@@ -1,14 +1,16 @@
 package com.abhisek.management.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.io.FileInputStream;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.abhisek.management.dto.BackUpRequest;
 import com.abhisek.management.service.BackupService;
 
 @RestController
@@ -19,12 +21,25 @@ public class BackupController {
     @Autowired
     private BackupService backupService;
 
-    @PostMapping("/run/{instanceId}")
-    public String runBackup(
-            @PathVariable Integer instanceId) {
+    @PostMapping("/run")
+    public ResponseEntity<String> runBackup(
+            @RequestBody BackUpRequest request) {
 
-        return backupService.runBackup(instanceId);
+        String result =
+        		backupService.runBackup(
+
+        		        request.getInstanceId(),
+
+        		        request.getStorageType(),
+
+        		        "MANUAL"
+
+        		);
+
+        return ResponseEntity.ok(result);
+
     }
+
     @GetMapping("/download/{backupId}")
     public ResponseEntity<InputStreamResource>
     downloadBackup(
@@ -48,5 +63,7 @@ public class BackupController {
                 .contentType(
                         MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
+
     }
+
 }

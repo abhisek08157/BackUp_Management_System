@@ -57,4 +57,13 @@ public class Instance {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    @Column(name = "database_type")
+    private String databaseType;
+
+	public String getDatabaseType() {
+		return databaseType;
+	}
+	public void setDatabaseType(String databaseType) {
+		this.databaseType = databaseType;
+	}
 }

@@ -1,11 +1,15 @@
 package com.abhisek.management.dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class InstanceRequest {
 
     @NotBlank(message = "Instance Name is required")
     private String instanceName;
+
+    @NotBlank(message = "Database Type is required")
+    private String databaseType;
 
     @NotBlank(message = "Database Name is required")
     private String databaseName;
@@ -14,74 +18,82 @@ public class InstanceRequest {
     private String ipAddress;
 
     @NotNull(message = "Port is required")
-    @Min(value = 1, message = "Port must be greater than 0")
-    @Max(value = 65535, message = "Port must be less than 65536")
     private Integer port;
 
-    @NotBlank(message = "Database Username is required")
+    @NotBlank(message = "Username is required")
     private String dbUsername;
 
-    @NotBlank(message = "Database Password is required")
+    @NotBlank(message = "Password is required")
     private String dbPassword;
 
     @NotBlank(message = "Status is required")
     private String status;
 
-	public String getInstanceName() {
-		return instanceName;
-	}
+    public InstanceRequest() {
+    }
 
-	public void setInstanceName(String instanceName) {
-		this.instanceName = instanceName;
-	}
+    public String getInstanceName() {
+        return instanceName;
+    }
 
-	public String getDatabaseName() {
-		return databaseName;
-	}
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
+    }
 
-	public void setDatabaseName(String databaseName) {
-		this.databaseName = databaseName;
-	}
+    public String getDatabaseType() {
+        return databaseType;
+    }
 
-	public String getIpAddress() {
-		return ipAddress;
-	}
+    public void setDatabaseType(String databaseType) {
+        this.databaseType = databaseType;
+    }
 
-	public void setIpAddress(String ipAddress) {
-		this.ipAddress = ipAddress;
-	}
+    public String getDatabaseName() {
+        return databaseName;
+    }
 
-	public Integer getPort() {
-		return port;
-	}
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
+    }
 
-	public void setPort(Integer port) {
-		this.port = port;
-	}
+    public String getIpAddress() {
+        return ipAddress;
+    }
 
-	public String getDbUsername() {
-		return dbUsername;
-	}
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
 
-	public void setDbUsername(String dbUsername) {
-		this.dbUsername = dbUsername;
-	}
+    public Integer getPort() {
+        return port;
+    }
 
-	public String getDbPassword() {
-		return dbPassword;
-	}
+    public void setPort(Integer port) {
+        this.port = port;
+    }
 
-	public void setDbPassword(String dbPassword) {
-		this.dbPassword = dbPassword;
-	}
+    public String getDbUsername() {
+        return dbUsername;
+    }
 
-	public String getStatus() {
-		return status;
-	}
+    public void setDbUsername(String dbUsername) {
+        this.dbUsername = dbUsername;
+    }
 
-	public void setStatus(String status) {
-		this.status = status;
-	}
+    public String getDbPassword() {
+        return dbPassword;
+    }
 
-    // Getters and Setters
+    public void setDbPassword(String dbPassword) {
+        this.dbPassword = dbPassword;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
 }

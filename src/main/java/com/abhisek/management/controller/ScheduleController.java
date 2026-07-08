@@ -5,7 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.abhisek.management.entity.BackupSchedule;
+import com.abhisek.management.dto.ScheduleRequest;
+import com.abhisek.management.dto.ScheduleResponse;
 import com.abhisek.management.service.ScheduleService;
 
 @RestController
@@ -17,20 +18,20 @@ public class ScheduleController {
     private ScheduleService scheduleService;
 
     @PostMapping
-    public BackupSchedule createSchedule(
-            @RequestBody BackupSchedule schedule) {
+    public ScheduleResponse createSchedule(
+            @RequestBody ScheduleRequest request) {
 
-        return scheduleService.saveSchedule(schedule);
+        return scheduleService.saveSchedule(request);
     }
 
     @GetMapping
-    public List<BackupSchedule> getAllSchedules() {
+    public List<ScheduleResponse> getAllSchedules() {
 
         return scheduleService.getAllSchedules();
     }
 
     @GetMapping("/{id}")
-    public BackupSchedule getScheduleById(
+    public ScheduleResponse getScheduleById(
             @PathVariable Integer id) {
 
         return scheduleService.getScheduleById(id);
@@ -44,4 +45,5 @@ public class ScheduleController {
 
         return "Schedule Deleted Successfully";
     }
+
 }

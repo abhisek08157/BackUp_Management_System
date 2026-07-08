@@ -40,4 +40,12 @@ public class HistoryResponse {
 
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
+    private String backupType;
+
+	public String getBackupType() {
+		return backupType;
+	}
+	public void setBackupType(String backupType) {
+		this.backupType = backupType;
+	}
 }

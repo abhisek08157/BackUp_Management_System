@@ -14,7 +14,7 @@ import com.abhisek.management.service.HistoryService;
 
 @RestController
 @RequestMapping("/api/history")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin("*")
 public class HistoryController {
 
     private final HistoryService historyService;

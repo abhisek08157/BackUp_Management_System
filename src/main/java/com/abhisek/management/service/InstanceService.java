@@ -1,16 +1,92 @@
 package com.abhisek.management.service;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.abhisek.management.dto.ConnectionTestRequest;
+import com.abhisek.management.dto.ConnectionTestResponse;
 import com.abhisek.management.dto.InstanceRequest;
 import com.abhisek.management.dto.InstanceResponse;
 import com.abhisek.management.entity.Instance;
 import com.abhisek.management.repository.InstanceRepository;
-
 @Service
 public class InstanceService {
+	public ConnectionTestResponse testConnection(ConnectionTestRequest request) {
+
+	    try {
+
+	        String url;
+
+	        if ("MYSQL".equalsIgnoreCase(request.getDatabaseType())) {
+
+	            url =
+	                    "jdbc:mysql://"
+	                            + request.getIpAddress()
+	                            + ":"
+	                            + request.getPort()
+	                            + "/"
+	                            + request.getDatabaseName()
+	                            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
+	        } else if ("ORACLE".equalsIgnoreCase(request.getDatabaseType())) {
+
+	            url =
+	                    "jdbc:oracle:thin:@//"
+	                            + request.getIpAddress()
+	                            + ":"
+	                            + request.getPort()
+	                            + "/"
+	                            + request.getDatabaseName();
+
+	        } else {
+
+	            return new ConnectionTestResponse(
+	                    false,
+	                    "INACTIVE",
+	                    "Unsupported Database Type");
+
+	        }
+
+	        Connection connection =
+	                DriverManager.getConnection(
+	                        url,
+	                        request.getDbUsername(),
+	                        request.getDbPassword());
+
+	        connection.close();
+
+	        return new ConnectionTestResponse(
+
+	                true,
+
+	                "ACTIVE",
+
+	                "Connection Successful"
+
+	        );
+
+	    }
+
+	    catch (SQLException e) {
+
+	        return new ConnectionTestResponse(
+
+	                false,
+
+	                "INACTIVE",
+
+	                e.getMessage()
+
+	        );
+
+	    }
+
+	}
+	
 
     private final InstanceRepository instanceRepository;
 
@@ -25,10 +101,13 @@ public class InstanceService {
     }
 
     public List<InstanceResponse> getAllInstances() {
-        return instanceRepository.findAll()
+
+        return instanceRepository
+                .findAll()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+
     }
 
     public InstanceResponse getInstanceById(Integer id) {
@@ -48,6 +127,7 @@ public class InstanceService {
         instance.setDbUsername(request.getDbUsername());
         instance.setDbPassword(request.getDbPassword());
         instance.setStatus(request.getStatus());
+        instance.setDatabaseType(request.getDatabaseType());
 
         Instance updated = instanceRepository.save(instance);
         return mapToResponse(updated);
@@ -69,6 +149,7 @@ public class InstanceService {
         instance.setDbUsername(request.getDbUsername());
         instance.setDbPassword(request.getDbPassword());
         instance.setStatus(request.getStatus());
+        instance.setDatabaseType(request.getDatabaseType());
         return instance;
     }
 
@@ -81,6 +162,8 @@ public class InstanceService {
         response.setPort(instance.getPort());
         response.setDbUsername(instance.getDbUsername());
         response.setStatus(instance.getStatus());
+        response.setDatabaseType(instance.getDatabaseType());
         return response;
     }
+	
 }

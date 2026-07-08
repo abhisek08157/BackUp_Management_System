@@ -1,6 +1,8 @@
 package com.abhisek.management.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.validation.Valid;
 
@@ -10,8 +12,10 @@ import org.springframework.web.bind.annotation.*;
 
 import com.abhisek.management.dto.InstanceRequest;
 import com.abhisek.management.dto.InstanceResponse;
+import com.abhisek.management.entity.Instance;
 import com.abhisek.management.service.InstanceService;
-
+import com.abhisek.management.dto.ConnectionTestRequest;
+import com.abhisek.management.dto.ConnectionTestResponse;
 @RestController
 @RequestMapping("/api/instances")
 @CrossOrigin("*")
@@ -21,6 +25,15 @@ public class InstanceController {
 
     public InstanceController(InstanceService instanceService) {
         this.instanceService = instanceService;
+    }
+    @PostMapping("/test-connection")
+    public ResponseEntity<ConnectionTestResponse> testConnection(
+            @RequestBody ConnectionTestRequest request) {
+
+        ConnectionTestResponse response =
+                instanceService.testConnection(request);
+
+        return ResponseEntity.ok(response);
     }
 
     // Create Instance
@@ -40,6 +53,15 @@ public class InstanceController {
         List<InstanceResponse> response = instanceService.getAllInstances();
 
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/status")
+    public ResponseEntity<List<InstanceResponse>> getLiveStatus() {
+
+        List<InstanceResponse> response =
+                instanceService.getAllInstances();
+
+        return ResponseEntity.ok(response);
+
     }
 
     // Get Instance By ID

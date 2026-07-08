@@ -101,4 +101,15 @@ public class BackupHistory {
 	public void setRemarks(String remarks) {
 		this.remarks = remarks;
 	}
+	@Column(name = "backup_type")
+	private String backupType;
+
+	public String getBackupType() {
+		return backupType;
+	}
+
+	public void setBackupType(String backupType) {
+		this.backupType = backupType;
+	}
+
 }

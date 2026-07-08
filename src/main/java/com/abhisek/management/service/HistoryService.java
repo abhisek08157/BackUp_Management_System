@@ -48,6 +48,7 @@ public class HistoryService {
         response.setDuration(history.getDuration());
         response.setStatus(history.getStatus());
         response.setRemarks(history.getRemarks());
+        response.setBackupType(history.getBackupType());
 
         if (history.getInstance() != null) {
             response.setInstanceId(history.getInstance().getInstanceId());
